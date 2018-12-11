@@ -4,22 +4,26 @@ const { Schema } = mongoose;
 const postSchema = new Schema({
   content: {
       type: String,
+      required: true,
       minlength: 100, // 한글 50자
       maxlength: 400 // 한글 200자
   }, 
   writer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User' //
+      ref: 'User', //
+      required: true
   },
   time: {
       type: Date,
-      default: Date.now
+      default: Date.now,
   },
   thumbs_up: {
-      type: Number
+      type: Number,
+      default: 0
   },
   thumbs_down: {
-      type: Number
+      type: Number,
+      default: 0
   }
 });
 

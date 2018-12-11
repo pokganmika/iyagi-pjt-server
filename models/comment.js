@@ -4,11 +4,13 @@ const { Schema } = mongoose;
 const commentSchema = new mongoose.Schema({
   content: {
       type: String,
-      maxlength: 1024
+      required: true,
+      maxlength: 200
   },
   writer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User' //
+      ref: 'User', //
+      required: true
   },
   time: {
       type: Date,
