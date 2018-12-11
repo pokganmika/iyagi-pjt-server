@@ -1,4 +1,4 @@
-var createError = require('http-errors');
+ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -8,8 +8,11 @@ var indexRouter = require('./routes'); //
 var postsRouter = require('./routes/posts'); //
 var storiesRouter = require('./routes/stories'); //
 var usersRouter = require('./routes/users');
+var connect = require('./models');
 
 var app = express();
+
+connect();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
