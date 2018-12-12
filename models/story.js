@@ -7,8 +7,8 @@ const storySchema = new Schema({
   posts: [ postSchema ],
   comments: [ commentSchema ],
   views: {
-      type: Number,
-      default: 0 // auto-increment option -> findByIdAndUpdate({ $inc: { views: 1} })
+    type: Number,
+    default: 0 // findByIdAndUpdate({ $inc: { views: 1} })
   },
   isDone: Boolean // 완결 여부
 });

@@ -25,6 +25,10 @@ const userSchema = new Schema({
   thumbnail: {
     data: Buffer,
     contentType: String
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
