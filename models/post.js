@@ -1,5 +1,7 @@
+// const Joi = require('joi'); // npm i joi
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const { User, userSchema } = require('./user');
 
 const postSchema = new Schema({
   content: {
@@ -28,6 +30,15 @@ const postSchema = new Schema({
 });
 
 const Post = mongoose.model('Post', postSchema);
+
+// function validateGenre(genre) {
+//     const schema = {
+//       name: Joi.string().min(3).required()
+//     };
+  
+//     return Joi.validate(genre, schema);
+// }
+
 
 exports.postSchema = postSchema;
 exports.Post = Post; 
