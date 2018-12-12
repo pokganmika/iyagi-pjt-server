@@ -1,0 +1,3 @@
+[submodule "client"]
+	path = client
+	url = https://github.com/codestates/im09-2018-11-prj-iyagi-client.git
