@@ -3,6 +3,8 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const session = require('express-session');
+require('dotenv').config();
 
 const indexRouter = require('./routes'); //
 const postsRouter = require('./routes/posts'); //
@@ -22,7 +24,16 @@ app.use(logger('dev'));
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(session({
+  resave: false,
+  saveUninitialized: false,
+  secret: process.env.COOKIE_SECRET,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+  },
+}));
 
 app.use('/', indexRouter); //
 app.use('/posts', postsRouter); //
@@ -31,7 +42,7 @@ app.use('/users', usersRouter);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname + '/client/build/index.html'))
-});
+}); // 
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
