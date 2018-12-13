@@ -20,3 +20,17 @@
 - engineer check in
 - git submodule
 - cors
+
+
+## 2018.12.12.
+
+- signup 구현
+- password hashing (md5)
+- login / logout
+
+
+## 2018.12.13.
+
+- MySQL
+- express 재설치
+
