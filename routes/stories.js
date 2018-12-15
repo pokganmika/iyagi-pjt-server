@@ -65,7 +65,7 @@ router.get('/:id/comments', async (req, res) => {
     if (results.length === 0) {
       return res.status(404).send({
         errorCode: "Not Found",
-        message: "해당 게시물이 존재하지 않습니다."
+        message: "해당 게시물의 댓글이 존재하지 않습니다."
       });
     }
 
@@ -98,7 +98,7 @@ router.post('/:id/comments', async (req, res) => {
       if (err) console.err;
       res.send({ 
         id: result.insertId,
-        message: "해당 id의 게시물이 저장되었습니다."
+        message: "해당 id의 댓글이 저장되었습니다."
        });
     });
   });
