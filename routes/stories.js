@@ -23,57 +23,79 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   var clickedStory = req.params.id;
 
-  var updateViews = `UPDATE stories SET views=views+1 WHERE storyId = ${clickedStory};`;
+  var sql = `SELECT * FROM stories WHERE storyId = ${clickedStory}`;
 
-  await db.conn.execute(updateViews, async (err) => {
-    if (err) console.err;
+  await db.conn.execute(sql, async (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send('ERROR: 해당 게시물이 존재하지 않습니다.');
+    }
 
-    var sql = `
-      SELECT s.storyId, s.views, p.postId, p.userId, p.content, p.thumbsUp, p.thumbsDown
-      FROM stories s INNER JOIN posts p 
-      ON s.storyId = p.storyId
-      WHERE s.storyId = ${clickedStory}
-    `; // ***** comment, user table join *****
-
-    await db.conn.execute(sql, async (err, result) => {
-      res.send(result);
+    var updateViews = `UPDATE stories SET views=views+1 WHERE storyId = ${clickedStory};`;
+  
+    await db.conn.execute(updateViews, async (err) => {
+      if (err) console.err;
+  
+      var fetchStory = `
+        SELECT s.storyId, s.views, p.postId, p.userId, p.content, p.thumbsUp, p.thumbsDown
+        FROM stories s INNER JOIN posts p 
+        ON s.storyId = p.storyId
+        WHERE s.storyId = ${clickedStory}
+      `; // ***** comment, user table join *****
+  
+      await db.conn.execute(fetchStory, async (err, result) => {
+        res.send(result);
+      });
     });
-  });
+  })
 });
 
 // 댓글 작성
 router.post('/:id', async (req, res) => {
   var clickedStory = req.params.id;
-  var userId = req.body.writer;
+  // *** add user input validation ***
+  var userId = req.body.userId;
   var content = req.body.content;
 
-  var insertComment = `
-    INSERT INTO comments(userId, content, storyId) 
-    VALUES('${userId}', '${content}', ${clickedStory})
-  `;
-  
-  await db.conn.execute(insertComment, (err) => {
-    if (err) console.err;
-    res.send('new comment saved!');
+  var sql = `SELECT * FROM stories WHERE storyId = ${clickedStory}`;
+
+  await db.conn.execute(sql, async (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send('ERROR: 해당 게시물이 존재하지 않습니다.');
+    }
+
+    var insertComment = `
+      INSERT INTO comments(userId, content, storyId) 
+      VALUES('${userId}', '${content}', ${clickedStory})
+    `;
+    
+    await db.conn.execute(insertComment, (err) => {
+      if (err) console.err;
+      res.send('new comment saved!');
+    });
   });
 });
 
 // 댓글 수정
-router.patch('/:id', async (req, res) => {
-  var updatedComment = req.body.id; // commentId
-  var userId = req.body.writer;
+router.patch('/comments/:id', async (req, res) => {
+  var updatedComment = req.params.id; // commentId
   var updatedContent = req.body.content;
 
-  console.log(`${updatedComment}, ${updatedContent}`);
+  var sql = `SELECT * FROM comments WHERE commentId = ${updatedComment}`;
+
+  await db.conn.execute(sql, async (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send('ERROR: 해당 댓글이 존재하지 않습니다.');
+    }
   
-  var updateComment = `
-    UPDATE comments SET content = '${updatedContent}'
-    WHERE commentId = ${updatedComment}
-  `;
-  
-  await db.conn.execute(updateComment, (err, results) => {
-    if (err) console.err;
-    res.send('comments updated!');
+    var updateComment = `
+      UPDATE comments SET content = '${updatedContent}'
+      WHERE commentId = ${updatedComment}
+    `;
+    
+    await db.conn.execute(updateComment, (err, results) => {
+      if (err) console.err;
+      res.send('comments updated!');
+    });
   });
 });
 
