@@ -5,8 +5,22 @@ var router = express.Router();
 
 // 완결 게시물 리스트
 router.get('/', async (req, res) => {
-  var getDoneStories = `SELECT storyId FROM stories WHERE isDone = true`;
-  // 수정 중
+  var getDoneStories = `
+    SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
+    FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
+    WHERE s.isDone = true
+  `;
+  
+  await db.conn.execute(getDoneStories, (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "완결된 게시물이 존재하지 않습니다."
+      });
+    }
+
+    res.send(results);
+  })
 });
 
 // 단일 게시물 클릭
@@ -28,14 +42,13 @@ router.get('/:id', async (req, res) => {
     await db.conn.execute(updateViews, async (err) => {
       if (err) console.err;
   
-      var fetchStory = `
-        SELECT s.storyId, s.views, p.postId, p.userId, p.content, p.thumbsUp, p.thumbsDown
-        FROM stories s INNER JOIN posts p 
-        ON s.storyId = p.storyId
+      var getClickedStory = `
+        SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
+        FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
         WHERE s.storyId = ${clickedStory}
-      `; // ***** user table join *****
+      `; 
   
-      await db.conn.execute(fetchStory, async (err, result) => {
+      await db.conn.execute(getClickedStory, async (err, result) => {
         res.send(result);
       });
     });
