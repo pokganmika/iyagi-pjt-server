@@ -23,6 +23,19 @@ router.get('/', async (req, res) => {
   });
 });
 
+// 새로운 게시물(story) 추가
+router.post('/', async (req, res) => {
+  var sql = `INSERT INTO stories(isDone) VALUES(false)`;
+
+  await db.conn.execute(sql, (err, result) => {
+    if (err) console.err;
+    res.status(201).send({
+      id: result.insertId,
+      message: "해당 id값으로 신규 게시물(story)이 저장되었습니다."
+    })
+  })
+});
+
 // 단일 연재 게시물 클릭
 router.get('/:id', async (req, res) => {
   var clickedStory = req.params.id;
@@ -58,8 +71,8 @@ router.get('/:id', async (req, res) => {
 // 연재글 작성
 router.post('/:id', async (req, res) => { // *** add authentication middleware ***
   var storyId = req.params.id;
-  var userId = req.body.userId; // 로그인한 사용자의 아이디 -> 세션 아이디
-  var content = req.body.content; // 글자 수 제한 -> validation
+  var userId = req.body.userId; // 로그인한 사용자의 아이디 -> ** session.id **
+  var content = req.body.content; // *** 글자 수 제한 -> validation ***
     
   var checkUser = `SELECT userId FROM posts WHERE storyId = ${storyId}`;
   await db.conn.execute(checkUser, async (err, results) => {
@@ -78,7 +91,7 @@ router.post('/:id', async (req, res) => { // *** add authentication middleware *
       if (err) console.err;
       res.status(201).send({ 
         id: result.insertId,
-        message: "해당 id의 게시물이 저장되었습니다."
+        message: "해당 id값으로 신규 게시물(post)이 저장되었습니다."
         });
     });
   });
@@ -154,7 +167,7 @@ router.patch('/:id', async (req, res) => {
         if (err) console.err;
         res.send({
           id: storyId,
-          message: "해당 id의 게시물이 완결 처리 되었습니다."
+          message: "해당 id의 연재 게시물이 완결 처리 되었습니다."
         });
       })
     });
