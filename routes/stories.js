@@ -5,18 +5,8 @@ var router = express.Router();
 
 // 완결 게시물 리스트
 router.get('/', async (req, res) => {
-  var sql = `
-    SELECT s.storyId, s.views, p.postId, p.userId, p.content, p.thumbsUp, p.thumbsDown
-    FROM stories s INNER JOIN posts p
-    ON s.storyId = p.storyId
-    WHERE s.isDone = true
-    ORDER BY s.storyId, p.postId
-  `; // ***** comment, user table join *****
-  
-  await db.conn.execute(sql, (err, results) => {
-    if (err) console.err;
-    res.send(results);
-  });
+  var getDoneStories = `SELECT storyId FROM stories WHERE isDone = true`;
+  // 수정 중
 });
 
 // 단일 게시물 클릭
@@ -40,7 +30,7 @@ router.get('/:id', async (req, res) => {
         FROM stories s INNER JOIN posts p 
         ON s.storyId = p.storyId
         WHERE s.storyId = ${clickedStory}
-      `; // ***** comment, user table join *****
+      `; // ***** user table join *****
   
       await db.conn.execute(fetchStory, async (err, result) => {
         res.send(result);
@@ -49,10 +39,20 @@ router.get('/:id', async (req, res) => {
   })
 });
 
-// 댓글 작성
-router.post('/:id', async (req, res) => {
+// 댓글 리스트
+router.get('/:id/comments', async (req, res) => {
   var clickedStory = req.params.id;
-  // *** add user input validation ***
+  
+  var sql = `SELECT * FROM comments WHERE storyId = ${clickedStory}`;
+
+  await db.conn.execute(sql, (err, results) => {
+    res.send(results);
+  })
+});
+
+// 댓글 작성
+router.post('/:id/comments', async (req, res) => {
+  var clickedStory = req.params.id;
   var userId = req.body.userId;
   var content = req.body.content;
 
@@ -76,8 +76,8 @@ router.post('/:id', async (req, res) => {
 });
 
 // 댓글 수정
-router.patch('/comments/:id', async (req, res) => {
-  var updatedComment = req.params.id; // commentId
+router.patch('/:id/comments/:num', async (req, res) => {
+  var updatedComment = req.params.num; // commentId
   var updatedContent = req.body.content;
 
   var sql = `SELECT * FROM comments WHERE commentId = ${updatedComment}`;
