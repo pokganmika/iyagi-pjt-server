@@ -36,19 +36,25 @@ router.post('/', async (req, res) => { // *** add authentication middleware ***
         console.log('new story saved: #', ongoingStoryId);
       })
     } else {
-      // *** 추가: 연재 중인 게시물에 한 번 작성한 사용자는 다시 작성 못함 ***
       ongoingStoryId = result[0].storyId;
-      console.log(ongoingStoryId);
+      console.log('연재 게시물 ID: ', ongoingStoryId);
     }
-
-    var insertPost = `
-      INSERT INTO posts(userId, content, storyId) 
-      VALUES('${userId}', '${content}', ${ongoingStoryId})`;
-
-    await db.conn.execute(insertPost, (err) => {
-      if (err) console.err;
-      // *** foreign key value가 맞지 않는 경우 저장 X -> 에러 처리 ***
-      res.status(201).send('new post saved!');
+    
+    var checkUser = `SELECT userId FROM posts WHERE storyId = ${ongoingStoryId}`;
+    await db.conn.execute(checkUser, async (err, results) => {
+      var alreadyWrote = [];
+      results.forEach((result) => alreadyWrote.push(result.userId));
+      if (alreadyWrote.includes(userId)) return res.send('ERROR: 이미 작성한 사용자입니다.');
+        
+      var insertPost = `
+        INSERT INTO posts(userId, content, storyId) 
+        VALUES('${userId}', '${content}', ${ongoingStoryId})`;
+  
+      await db.conn.execute(insertPost, (err) => {
+        if (err) console.err;
+        // *** foreign key value가 맞지 않는 경우 저장 X -> 에러 처리 ***
+        res.status(201).send('new post saved!');
+      });
     });
   });
 });
