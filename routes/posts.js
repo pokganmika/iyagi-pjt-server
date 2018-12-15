@@ -6,10 +6,10 @@ var router = express.Router();
 // 연재 게시물 리스트
 router.get('/', async (req, res) => {
   var sql = `
-    SELECT u.userId, u.thumbnail, p.postId, p.content, p.postedAt, p.thumbsUp, p.thumbsDown
-    FROM users u INNER JOIN posts p
-    ON u.userId = p.userId
-    WHERE p.storyId = (SELECT storyId FROM stories WHERE isDone = false);`;
+    SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
+    FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
+    WHERE s.isDone = false  
+  `;
 
   await db.conn.execute(sql, (err, results) => {
     if (err) console.err;
@@ -23,55 +23,71 @@ router.get('/', async (req, res) => {
   });
 });
 
-// 연재글 작성
-router.post('/', async (req, res) => { // *** add authentication middleware ***
-  var userId = req.body.userId; // 로그인한 사용자의 아이디 -> 세션 아이디
-  var content = req.body.content; // 글자 수 제한 -> validation
- 
-  var getStoryId = `SELECT storyId FROM stories WHERE isDone = false`;
-  
-  var ongoingStoryId = 0;
-  await db.conn.execute(getStoryId, async (err, result) => {
-    if (err) console.err; 
-    if (result.length === 0) {
-      var insertStory = `INSERT INTO stories(isDone) VALUES(false);`;
-      await db.conn.execute(insertStory, async (err) => {
-        if (err) console.err;
-        ongoingStoryId = await db.conn.execute(sql);
-        console.log('new story saved: #', ongoingStoryId);
-      })
-    } else {
-      ongoingStoryId = result[0].storyId;
-      console.log('연재 게시물 ID: ', ongoingStoryId);
-    }
-    
-    var checkUser = `SELECT userId FROM posts WHERE storyId = ${ongoingStoryId}`;
-    await db.conn.execute(checkUser, async (err, results) => {
-      var alreadyWrote = [];
-      results.forEach((result) => alreadyWrote.push(result.userId));
-      if (alreadyWrote.includes(userId)) return res.send({
-        errorCode: "duplicate-error",
-        message: "이미 작성한 사용자입니다."
+// 단일 연재 게시물 클릭
+router.get('/:id', async (req, res) => {
+  var clickedStory = req.params.id;
+
+  var sql = `SELECT * FROM stories WHERE storyId = ${clickedStory}`;
+
+  await db.conn.execute(sql, async (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "해당 게시물이 존재하지 않습니다."
       });
-        
-      var insertPost = `
-        INSERT INTO posts(userId, content, storyId) 
-        VALUES('${userId}', '${content}', ${ongoingStoryId})`;
+    }
+
+    var updateViews = `UPDATE stories SET views=views+1 WHERE storyId = ${clickedStory};`;
   
-      await db.conn.execute(insertPost, (err, result) => {
-        if (err) console.err;
-        res.status(201).send({ 
-          id: result.insertId,
-          message: "해당 id의 게시물이 저장되었습니다."
-         });
+    await db.conn.execute(updateViews, async (err) => {
+      if (err) console.err;
+  
+      var getClickedStory = `
+        SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
+        FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
+        WHERE s.storyId = ${clickedStory}
+      `; 
+  
+      await db.conn.execute(getClickedStory, async (err, result) => {
+        res.send(result);
       });
     });
+  })
+});
+
+// 연재글 작성
+router.post('/:id', async (req, res) => { // *** add authentication middleware ***
+  var storyId = req.params.id;
+  var userId = req.body.userId; // 로그인한 사용자의 아이디 -> 세션 아이디
+  var content = req.body.content; // 글자 수 제한 -> validation
+    
+  var checkUser = `SELECT userId FROM posts WHERE storyId = ${storyId}`;
+  await db.conn.execute(checkUser, async (err, results) => {
+    var alreadyWrote = [];
+    results.forEach((result) => alreadyWrote.push(result.userId));
+    if (alreadyWrote.includes(userId)) return res.send({
+      errorCode: "duplicate-error",
+      message: "이미 작성한 사용자입니다."
+    });
+      
+    var insertPost = `
+      INSERT INTO posts(userId, content, storyId) 
+      VALUES('${userId}', '${content}', ${storyId})`;
+
+    await db.conn.execute(insertPost, (err, result) => {
+      if (err) console.err;
+      res.status(201).send({ 
+        id: result.insertId,
+        message: "해당 id의 게시물이 저장되었습니다."
+        });
+    });
   });
+  
 });
 
 // 연재 게시물(a single resource) 추천, 비추천 버튼 클릭
-router.patch('/:id', async (req, res) => {  
-  var postId = req.params.id;
+router.patch('/:id/post/:num', async (req, res) => {  
+  var postId = req.params.num;
   var thumbs = req.body.thumbs;
 
   var sql = `SELECT * FROM posts WHERE postId = ${postId}`;
@@ -110,18 +126,19 @@ router.patch('/:id', async (req, res) => {
     else {
       res.send({
         errorCode: "Invalid Request",
-        messgae: "요청한 내용이 없습니다."
+        messgae: "요청한 내용을 처리할 수 없습니다."
       });
     }
   });
 });
 
 // 미리보기 화면에서 완결 버튼 클릭
-router.patch('/', async (req, res) => {
+router.patch('/:id', async (req, res) => {
+  var storyId = req.params.id;
+
   if (req.body.isDone === true) {
-    var sql = `SELECT storyId FROM stories WHERE isDone = false`;
+    var sql = `SELECT * FROM stories WHERE storyId = ${storyId}`;
   
-    var ongoingStoryId = 0;
     await db.conn.execute(sql, async (err, result) => {
       if (err) console.err;
       if (result.length === 0) {
@@ -130,15 +147,13 @@ router.patch('/', async (req, res) => {
           message: "연재 중인 게시물이 없습니다."
         });
       }
-      ongoingStoryId = result[0].storyId;
-      console.log('완결 처리될 게시물 번호: ', ongoingStoryId);
   
-      var updateStory = `UPDATE stories SET isDone = true WHERE storyId = ${ongoingStoryId}`;
+      var updateStory = `UPDATE stories SET isDone = true WHERE storyId = ${storyId}`;
   
       await db.conn.execute(updateStory, (err) => {
         if (err) console.err;
         res.send({
-          id: ongoingStoryId,
+          id: storyId,
           message: "해당 id의 게시물이 완결 처리 되었습니다."
         });
       })
