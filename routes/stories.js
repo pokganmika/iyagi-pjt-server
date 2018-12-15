@@ -17,7 +17,10 @@ router.get('/:id', async (req, res) => {
 
   await db.conn.execute(sql, async (err, results) => {
     if (results.length === 0) {
-      return res.status(404).send('ERROR: 해당 게시물이 존재하지 않습니다.');
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "해당 게시물이 존재하지 않습니다."
+      });
     }
 
     var updateViews = `UPDATE stories SET views=views+1 WHERE storyId = ${clickedStory};`;
@@ -46,6 +49,13 @@ router.get('/:id/comments', async (req, res) => {
   var sql = `SELECT * FROM comments WHERE storyId = ${clickedStory}`;
 
   await db.conn.execute(sql, (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "해당 게시물이 존재하지 않습니다."
+      });
+    }
+
     res.send(results);
   })
 });
@@ -60,7 +70,10 @@ router.post('/:id/comments', async (req, res) => {
 
   await db.conn.execute(sql, async (err, results) => {
     if (results.length === 0) {
-      return res.status(404).send('ERROR: 해당 게시물이 존재하지 않습니다.');
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "해당 게시물이 존재하지 않습니다."
+      });
     }
 
     var insertComment = `
@@ -68,9 +81,12 @@ router.post('/:id/comments', async (req, res) => {
       VALUES('${userId}', '${content}', ${clickedStory})
     `;
     
-    await db.conn.execute(insertComment, (err) => {
+    await db.conn.execute(insertComment, (err, result) => {
       if (err) console.err;
-      res.send('new comment saved!');
+      res.send({ 
+        id: result.insertId,
+        message: "해당 id의 게시물이 저장되었습니다."
+       });
     });
   });
 });
@@ -84,7 +100,10 @@ router.patch('/:id/comments/:num', async (req, res) => {
 
   await db.conn.execute(sql, async (err, results) => {
     if (results.length === 0) {
-      return res.status(404).send('ERROR: 해당 댓글이 존재하지 않습니다.');
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "해당 댓글이 존재하지 않습니다."
+      });
     }
   
     var updateComment = `
@@ -94,7 +113,10 @@ router.patch('/:id/comments/:num', async (req, res) => {
     
     await db.conn.execute(updateComment, (err, results) => {
       if (err) console.err;
-      res.send('comments updated!');
+      res.send({
+        id: updatedComment,
+        message: "해당 댓글의 내용이 수정되었습니다."
+      });
     });
   });
 });

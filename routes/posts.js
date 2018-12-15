@@ -13,20 +13,25 @@ router.get('/', async (req, res) => {
 
   await db.conn.execute(sql, (err, results) => {
     if (err) console.err;
+    if (results.length === 0) {
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "연재 중인 게시물이 없습니다."
+      })
+    }
     res.send(results);
   });
 });
 
 // 연재글 작성
 router.post('/', async (req, res) => { // *** add authentication middleware ***
-  // *** add handling user input validation ***
-  var userId = req.body.userId; // 로그인한 사용자의 아이디
-  var content = req.body.content; // 글자 수 제한
+  var userId = req.body.userId; // 로그인한 사용자의 아이디 -> 세션 아이디
+  var content = req.body.content; // 글자 수 제한 -> validation
  
-  var sql = `SELECT storyId FROM stories WHERE isDone = false`;
+  var getStoryId = `SELECT storyId FROM stories WHERE isDone = false`;
   
   var ongoingStoryId = 0;
-  await db.conn.execute(sql, async (err, result) => {
+  await db.conn.execute(getStoryId, async (err, result) => {
     if (err) console.err; 
     if (result.length === 0) {
       var insertStory = `INSERT INTO stories(isDone) VALUES(false);`;
@@ -44,16 +49,21 @@ router.post('/', async (req, res) => { // *** add authentication middleware ***
     await db.conn.execute(checkUser, async (err, results) => {
       var alreadyWrote = [];
       results.forEach((result) => alreadyWrote.push(result.userId));
-      if (alreadyWrote.includes(userId)) return res.send('ERROR: 이미 작성한 사용자입니다.');
+      if (alreadyWrote.includes(userId)) return res.send({
+        errorCode: "duplicate-error",
+        message: "이미 작성한 사용자입니다."
+      });
         
       var insertPost = `
         INSERT INTO posts(userId, content, storyId) 
         VALUES('${userId}', '${content}', ${ongoingStoryId})`;
   
-      await db.conn.execute(insertPost, (err) => {
+      await db.conn.execute(insertPost, (err, result) => {
         if (err) console.err;
-        // *** foreign key value가 맞지 않는 경우 저장 X -> 에러 처리 ***
-        res.status(201).send('new post saved!');
+        res.status(201).send({ 
+          id: result.insertId,
+          message: "해당 id의 게시물이 저장되었습니다."
+         });
       });
     });
   });
@@ -66,10 +76,13 @@ router.patch('/:id', async (req, res) => {
 
   var sql = `SELECT * FROM posts WHERE postId = ${postId}`;
 
-  await db.conn.execute(sql, async (err, results) => {
+  await db.conn.execute(sql, async (err, result) => {
     if (err) console.err; 
-    if (results.length === 0) {
-      return res.status(404).send('ERROR: 해당 포스트가 존재하지 않습니다.');
+    if (result.length === 0) {
+      return res.status(404).send({
+        errorCode: "Not Found",
+        message: "요청한 게시물이 존재하지 않습니다."
+      });
     }
     
     if (thumbs === 'up') {
@@ -77,19 +90,28 @@ router.patch('/:id', async (req, res) => {
   
       await db.conn.execute(updateThumbsUp, (err) => {
         if (err) console.err;
-        res.send('increment thumbsUp!');
+        res.send({
+          id: postId,
+          message: "요청한 게시물이 수정되었습니다. (추천 +1)"
+        });
       })
     }
     else if (thumbs === 'down') {
       var updateThumbsDown = `UPDATE posts SET thumbsDown=thumbsDown+1 WHERE postId = ${postId}`;
   
-      await db.conn.execute(updateThumbsDown, (err) => {
+      await db.conn.execute(updateThumbsDown, (err, result) => {
         if (err) console.err;
-        res.send('increment thumbsDown!');
+        res.send({
+          id: postId,
+          message: "요청한 게시물이 수정되었습니다. (비추천 +1)"
+        });
       })
     }
     else {
-      res.send('ERROR: Invalid request!')
+      res.send({
+        errorCode: "Invalid Request",
+        messgae: "요청한 내용이 없습니다."
+      });
     }
   });
 });
@@ -102,8 +124,11 @@ router.patch('/', async (req, res) => {
     var ongoingStoryId = 0;
     await db.conn.execute(sql, async (err, result) => {
       if (err) console.err;
-      if (results.length === 0) {
-        return res.status(404).send('ERROR: 해당 게시물이 존재하지 않습니다.');
+      if (result.length === 0) {
+        return res.status(404).send({
+          errorCode: "Not Found",
+          message: "연재 중인 게시물이 없습니다."
+        });
       }
       ongoingStoryId = result[0].storyId;
       console.log('완결 처리될 게시물 번호: ', ongoingStoryId);
@@ -112,7 +137,10 @@ router.patch('/', async (req, res) => {
   
       await db.conn.execute(updateStory, (err) => {
         if (err) console.err;
-        res.send('story closed!');
+        res.send({
+          id: ongoingStoryId,
+          message: "해당 id의 게시물이 완결 처리 되었습니다."
+        });
       })
     });
   }
