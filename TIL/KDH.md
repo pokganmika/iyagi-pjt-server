@@ -25,3 +25,16 @@ Udemy에서 'Node.js: The Complete Guide to Build RESTful APIs' 강좌 들으면
   - `git submodule` 커맨드 사용하여 client repository를 server repository의 submodule로 clone.
   - server repository에서 build한 static 파일 serve. (각자 repo에서 개발 후, `git submodule update` 커맨드로 병합 가능)
   - client side에 proxy 설정을 통해 server-side의 5000번 port와 client-side의 3000번 port 둘 다 사용 가능.
+
+## [181212 TIL] 
+MongoDB connection 설정
+GET / POST router 일부 구현
+
+## [181213 TIL] 
+MySQL로 database 변경
+
+## [181214 TIL] 
+RESTful API
+
+## [181215 TIL] 
+sequelize 공부 및 refactoring
