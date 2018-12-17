@@ -42,7 +42,6 @@ router.post('/login', notloggedin, (req, res, next) => {
         console.error(loginError);
         return next(loginError);
       }
-      console.log('이거'+req.user.id);
       return res.redirect('/');
     });
   })(req, res, next);
