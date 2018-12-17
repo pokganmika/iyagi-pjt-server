@@ -13,12 +13,10 @@ const postsRouter = require('./routes/posts');
 const storiesRouter = require('./routes/stories');
 const usersRouter = require('./routes/users');
 const sequelize = require('./models').sequelize;
-// const { sequelize } = require('./models');
 // const passportConfig = require('./passport');
-const db = require('./models'); // mysql connect
 
 const app = express();
-// sequelize.sync();
+sequelize.sync({ logging: console.log }) // { force: true }
 // passportConfig(passport);
 
 // view engine setup
