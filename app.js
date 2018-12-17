@@ -13,12 +13,11 @@ const postsRouter = require('./routes/posts');
 const storiesRouter = require('./routes/stories');
 const usersRouter = require('./routes/users');
 const sequelize = require('./models').sequelize;
-// const { sequelize } = require('./models');
-const passportConfig = require('./passport');
+// const passportConfig = require('./passport');
 
 const app = express();
-sequelize.sync();
-passportConfig(passport);
+sequelize.sync({ logging: console.log }) // { force: true }
+// passportConfig(passport);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -39,9 +38,9 @@ app.use(session({
   },
 }));
 
-app.use(flash());
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(flash());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 app.use('/', indexRouter);
 app.use('/posts', postsRouter);
@@ -69,3 +68,4 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
