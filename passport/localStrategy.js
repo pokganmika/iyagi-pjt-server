@@ -5,20 +5,20 @@ const { User } = require('../models');
 
 module.exports = passport => {
   passport.use(new LocalStrategy({
-    usernameField: 'userId',
+    usernameField: 'id',
     passwordField: 'password',
-  }, async (userId, password, done) => {
+  }, async (id, password, done) => {
     try {
-      const exUser = await User.find({ where: { userId }});
-      if (exUser) {
-        const result = await bcrypt.compare(password, exUser.password);
+      const signedUser = await User.find({ where: { id }});
+      if (signedUser) {
+        const result = await bcrypt.compare(password, signedUser.password);
         if (result) {
-          done(null, exUser);
+          done(null, signedUser);
         } else {
           done(null, false, { message: '비밀번호가 일치하지 않습니다.' });
         }
       } else {
-        done(null, false, { message: '가입되지 안히은 회원입니다.' })
+        done(null, false, { message: '가입되지 않은 회원입니다.' })
       }
     } catch (error) {
       console.error(error);
