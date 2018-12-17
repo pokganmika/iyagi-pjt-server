@@ -1,137 +1,178 @@
-var db = require('../models');
-var mysql = require('mysql2/promise');
-var express = require('express');
-var router = express.Router();
+const db = require('../models');
+const mysql = require('mysql2/promise');
+const express = require('express');
+const router = express.Router();
 
 // 완결 게시물 리스트
-router.get('/', async (req, res) => {
-  var getDoneStories = `
-    SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
-    FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
-    WHERE s.isDone = true
-  `;
-  
-  await db.conn.execute(getDoneStories, (err, results) => {
-    if (results.length === 0) {
-      return res.status(404).send({
-        errorCode: "Not Found",
-        message: "완결된 게시물이 존재하지 않습니다."
+router.get('/', async (req, res, next) => {
+  try {
+    let doneStories = await db.Story.findAll({
+      where: { isDone: true },
+      attributes: { 
+        include: [ 'id', 'views' ], 
+        exclude: [ 'isDone', 'createdAt' ] 
+      },
+      include: [{ 
+        model: db.Post,
+        required: true,
+        attributes: { 
+          include: [ 'id', 'content' ], 
+          exclude: [ 'userId', 'postedAt', 'thumbsUp', 'thumbsDown', 'storyId' ] 
+        },
+        include: [{
+          model: db.User,
+          required: true,
+          attributes: { 
+            include: [ 'id', 'thumbnail' ], 
+            exclude: [ 'password', 'email', 'createdAt' ] 
+          }
+        }]
+      }]
+    });
+
+    if (doneStories.length === 0) {
+      return res.status(404).json({
+        errorCode: "Not found",
+        message: "완결된 게시물이 없습니다."
       });
     }
+    res.send(doneStories);
 
-    res.send(results);
-  })
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
 });
 
-// 단일 게시물 클릭
-router.get('/:id', async (req, res) => {
-  var clickedStory = req.params.id;
+// 단일 완결물 클릭
+router.get('/:id', async (req, res, next) => {
+  let clickedStoryId = req.params.id;
 
-  var sql = `SELECT * FROM stories WHERE storyId = ${clickedStory}`;
+  try {
+    let story = await db.Story.findOne({
+      where: { id: clickedStoryId, isDone: true },
+      attributes: { 
+        include: [ 'id', 'views' ], 
+        exclude: [ 'isDone', 'createdAt' ] 
+      },
+      include: [{ 
+        model: db.Post,
+        required: true,
+        attributes: { 
+          include: [ 'id', 'content' ], 
+          exclude: [ 'userId', 'postedAt', 'thumbsUp', 'thumbsDown', 'storyId' ] 
+        },
+        include: [{
+          model: db.User,
+          required: true,
+          attributes: { 
+            include: [ 'id', 'thumbnail' ], 
+            exclude: [ 'password', 'email', 'createdAt' ] 
+          }
+        }]
+      }]
+    });
 
-  await db.conn.execute(sql, async (err, results) => {
-    if (results.length === 0) {
+    if (!story) {
       return res.status(404).send({
-        errorCode: "Not Found",
-        message: "해당 게시물이 존재하지 않습니다."
+        errorCode: "Not found",
+        message: "요청과 일치하는 게시물이 존재하지 않습니다."
       });
     }
 
-    var updateViews = `UPDATE stories SET views=views+1 WHERE storyId = ${clickedStory};`;
-  
-    await db.conn.execute(updateViews, async (err) => {
-      if (err) console.err;
-  
-      var getClickedStory = `
-        SELECT s.storyId, s.views, p.postId, p.content, u.userId, u.thumbnail
-        FROM stories s INNER JOIN posts p ON s.storyId = p.storyId INNER JOIN users u ON p.userId = u.userId
-        WHERE s.storyId = ${clickedStory}
-      `; 
-  
-      await db.conn.execute(getClickedStory, async (err, result) => {
-        res.send(result);
-      });
+    let updatedStory = await story.increment('views', { by: 1 });
+    return res.send(updatedStory);
+
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
     });
-  })
+  }
 });
 
 // 댓글 리스트
-router.get('/:id/comments', async (req, res) => {
-  var clickedStory = req.params.id;
-  
-  var sql = `SELECT * FROM comments WHERE storyId = ${clickedStory}`;
+router.get('/:id/comments', async (req, res, next) => {
+  let clickedStoryId = req.params.id;
 
-  await db.conn.execute(sql, (err, results) => {
-    if (results.length === 0) {
+  try {
+    let comments = await db.Comment.findAll({
+      where: { storyId: clickedStoryId }
+    });
+
+    if (!comments) {
       return res.status(404).send({
         errorCode: "Not Found",
         message: "해당 게시물의 댓글이 존재하지 않습니다."
       });
     }
 
-    res.send(results);
-  })
+    return res.send(comments);
+
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
 });
 
 // 댓글 작성
-router.post('/:id/comments', async (req, res) => {
-  var clickedStory = req.params.id;
-  var userId = req.body.userId;
-  var content = req.body.content;
+router.post('/:id/comments', async (req, res, next) => {
+  let storyId = req.params.id;
+  let username = req.body.username;
+  let content = req.body.content;
 
-  var sql = `SELECT * FROM stories WHERE storyId = ${clickedStory}`;
-
-  await db.conn.execute(sql, async (err, results) => {
-    if (results.length === 0) {
-      return res.status(404).send({
-        errorCode: "Not Found",
-        message: "해당 게시물이 존재하지 않습니다."
-      });
-    }
-
-    var insertComment = `
-      INSERT INTO comments(userId, content, storyId) 
-      VALUES('${userId}', '${content}', ${clickedStory})
-    `;
-    
-    await db.conn.execute(insertComment, (err, result) => {
-      if (err) console.err;
-      res.send({ 
-        id: result.insertId,
-        message: "해당 id의 댓글이 저장되었습니다."
-       });
+  try {
+    let newComment = await db.Comment.create({
+      username, content, storyId
     });
-  });
+    return res.status(201).json({
+      id: newComment.dataValues.id,
+      message: "해당 id값으로 신규 댓글이 저장되었습니다."
+    });
+    
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
 });
 
 // 댓글 수정
 router.patch('/:id/comments/:num', async (req, res) => {
-  var updatedComment = req.params.num; // commentId
-  var updatedContent = req.body.content;
+  let commentId = req.params.num;
+  let content = req.body.content;
 
-  var sql = `SELECT * FROM comments WHERE commentId = ${updatedComment}`;
-
-  await db.conn.execute(sql, async (err, results) => {
-    if (results.length === 0) {
+  try { 
+    let comment = await db.Comment.findByPk(commentId);  
+    if (!comment) {
       return res.status(404).send({
         errorCode: "Not Found",
         message: "해당 댓글이 존재하지 않습니다."
       });
     }
-  
-    var updateComment = `
-      UPDATE comments SET content = '${updatedContent}'
-      WHERE commentId = ${updatedComment}
-    `;
     
-    await db.conn.execute(updateComment, (err, results) => {
-      if (err) console.err;
-      res.send({
-        id: updatedComment,
-        message: "해당 댓글의 내용이 수정되었습니다."
-      });
+    let updatedComment = await comment.update({ content });
+    res.send({
+      id: updatedComment.id,
+      message: "해당 id의 댓글 내용이 수정되었습니다."
     });
-  });
+    
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
 });
 
 module.exports = router;
