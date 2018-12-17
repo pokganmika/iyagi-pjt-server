@@ -1,7 +1,7 @@
 const db = require('../models');
-const mysql = require('mysql2/promise');
 const express = require('express');
 const router = express.Router();
+const { loggedin } = require('./middlewares');
 
 // 연재 게시물 리스트
 router.get('/', async (req, res, next) => {
@@ -115,9 +115,9 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // 연재글 작성
-router.post('/:id', async (req, res, next) => { // *** add authentication middleware ***
+router.post('/:id', loggedin, async (req, res, next) => { 
   let storyId = req.params.id;
-  let userId = req.body.userId; // *** req.user.id ***
+  let userId = req.user.id;
   let content = req.body.content;
     
   try {
