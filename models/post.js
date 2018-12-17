@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  var Post = sequelize.define('post', {
-    username: {
+  return sequelize.define('post', {
+    userId: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -8,11 +8,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: false,
       validate: {
-        leg: {
-          args: [100, 400],
-          msg: '한글 기준 50자 이상, 200자 이하로 작성 가능합니다.'
+        len: {
+          args: [250, 500],
+          msg: '최소 250자 이상, 최대 500자 이하로 작성 가능합니다.'
         }
       }
+    },
+    postedAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('now()')
     },
     thumbsUp: {
       type: DataTypes.INTEGER,
@@ -26,7 +30,5 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     }
-  });
-
-  return Post;
+  }, { timestamps: false });
 };

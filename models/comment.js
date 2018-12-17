@@ -1,24 +1,20 @@
 module.exports = (sequelize, DataTypes) => {
-  var Comment = sequelize.define('comment', {
-    writer: {
+  return sequelize.define('comment', {
+    username: {
       type: DataTypes.STRING,
       allowNull: false
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        leg: {
-          args: [0, 200],
-          msg: '한글 기준 100자 이하로 작성 가능합니다.'
-        }
-      }
+      allowNull: false
+    },
+    postedAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('now()')
     },
     storyId: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-  });
-
-  return Comment;
+  }, { timestamps: false });
 };

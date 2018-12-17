@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  var User = sequelize.define('user', {
-    username: {
+  return sequelize.define('user', {
+    id: {
       type: DataTypes.STRING,
       primaryKey: true,
       allowNull: false
@@ -18,7 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     thumbnail: { type: DataTypes.STRING },
-  });
-
-  return User;
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('now()')
+    }
+  }, { timestamps: false });
 };

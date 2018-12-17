@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  var Story = sequelize.define('story', {
+  return sequelize.define('story', {
     views: {
       type: DataTypes.INTEGER,
       defaultValue: 0
@@ -8,8 +8,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('now()')
     }
-  });
-
-  return Story;
+  }, { timestamps: false });
 };

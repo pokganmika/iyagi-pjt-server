@@ -1,34 +1,22 @@
-var path = require('path');
-var Sequelize = require('sequelize');
+const path = require('path');
+const Sequelize = require('sequelize');
 
-var env = process.env.NODE_ENV || 'development';
-var config = require(__dirname + '/../config/config.json')[env];
-var db = {};
+const env = process.env.NODE_ENV || 'development';
+const config = require(__dirname + '/../config/config.json')[env];
+const db = {};
 
-if (config.use_env_variable) {
-  var sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  var sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
-
-sequelize.authenticate()
-  .then(() => {
-    console.log('Connected to the database successfully!');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+const sequelize = new Sequelize(config.database, config.username, config.password, config);
 
 db.User = require('./user')(sequelize, Sequelize);
 db.Story = require('./story')(sequelize, Sequelize);
 db.Post = require('./post')(sequelize, Sequelize);
 db.Comment = require('./comment')(sequelize, Sequelize);
 
-db.User.hasMany(db.Post, { foreignKey: 'username', sourceKey: 'username' });
+db.User.hasMany(db.Post, { foreignKey: 'userId', sourceKey: 'id' });
 db.Post.belongsTo(db.User, {
-  foreignKey: 'username', 
-  targetKey: 'username',
-  onDelete: 'NO ACTION' // 적용 X !!!!!
+  foreignKey: 'userId', 
+  targetKey: 'id',
+  onDelete: 'NO ACTION' // *** 적용 X !!!!! ***
 });
 db.Story.hasMany(db.Post, { foreignKey: 'storyId', sourceKey: 'id' });
 db.Post.belongsTo(db.Story, { foreignKey: 'storyId', targetKey: 'id' });
