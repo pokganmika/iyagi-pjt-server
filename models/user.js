@@ -17,9 +17,13 @@ module.exports = (sequelize, DataTypes) => {
         isEmail: { msg: 'Invalid email.' }
       }
     },
-    thumbnail: { type: DataTypes.STRING },
+    thumbnail: { 
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     createdAt: {
       type: DataTypes.DATE,
+      allowNull: true,
       defaultValue: sequelize.literal('now()')
     }
   }, { timestamps: false });

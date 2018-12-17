@@ -13,7 +13,7 @@ module.exports = passport => {
       .catch( err => done(err));
   });
 
-  local(passport);
-  kakao(passport);
+  // local(passport);
+  // kakao(passport);
 };
 
