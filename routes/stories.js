@@ -111,7 +111,7 @@ router.get('/:id', async (req, res, next) => {
         message: "요청과 일치하는 게시물이 존재하지 않습니다."
       });
     }
-
+    
     return res.json(story);
 
   } catch (e) {
