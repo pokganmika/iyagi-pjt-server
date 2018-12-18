@@ -64,7 +64,37 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// 단일 연재물 클릭
+// 단일 연재물 클릭 -> 조회수 증가
+router.patch('/:id', async (req, res, next) => {
+  const clickedStoryId = req.params.id;
+
+  try {
+    const story = await db.Story.findByPk(clickedStoryId);
+
+    if (!story) {
+      return res.status(404).json({
+        errorCode: "Not found",
+        message: "요청과 일치하는 게시물이 존재하지 않습니다."
+      });
+    }
+
+    const updatedStory = await story.increment('views');
+    
+    return res.json({
+      id: updatedStory.id,
+      message: `해당 id의 게시물 조회수가 +1 증가하였습니다. (${updatedStory.views + 1})`
+    });
+
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
+});
+
+// 단일 연재물 출력
 router.get('/:id', async (req, res, next) => {
   const clickedStoryId = req.params.id;
 
@@ -100,10 +130,7 @@ router.get('/:id', async (req, res, next) => {
       });
     }
 
-    const updatedStory = await story.increment('views', { by: 1 });
-    console.log('조회수', updatedStory.dataValues.views);
-    
-    return res.json(updatedStory); // *** 증가된 조회수 X !!!!!!! ***
+    return res.json(story); 
 
   } catch (e) {
     console.log(e);
@@ -161,13 +188,13 @@ router.patch('/:id/post/:num', async (req, res, next) => {
     }
 
     if (thumbs === 'up') {
-      const updatedPost = await post.increment('thumbsUp', { by: 1 });
+      const updatedPost = await post.increment('thumbsUp');
       res.json({
         id: updatedPost.id,
         message: `해당 id의 게시물 내용이 수정되었습니다. (추천수: ${updatedPost.thumbsUp + 1})`
       });
     } else if (thumbs === 'down') {
-      const updatedPost = await post.increment('thumbsDown', { by: 1 });
+      const updatedPost = await post.increment('thumbsDown');
       res.json({
         id: updatedPost.id,
         message: `해당 id의 게시물 내용이 수정되었습니다. (비추천수: ${updatedPost.thumbsDown + 1})`
@@ -183,7 +210,7 @@ router.patch('/:id/post/:num', async (req, res, next) => {
 });
 
 // 미리보기 화면에서 완결 버튼 클릭
-router.patch('/:id', async (req, res, next) => {
+router.patch('/:id/preview', async (req, res, next) => {
   const storyId = req.params.id;
 
   try {
