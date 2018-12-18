@@ -1,5 +1,4 @@
 const db = require('../models');
-const mysql = require('mysql2/promise');
 const express = require('express');
 const router = express.Router();
 
@@ -36,7 +35,7 @@ router.get('/', async (req, res, next) => {
         message: "완결된 게시물이 없습니다."
       });
     }
-    res.send(doneStories);
+    res.json(doneStories);
 
   } catch (e) {
     console.log(e);
@@ -77,14 +76,14 @@ router.get('/:id', async (req, res, next) => {
     });
 
     if (!story) {
-      return res.status(404).send({
+      return res.status(404).json({
         errorCode: "Not found",
         message: "요청과 일치하는 게시물이 존재하지 않습니다."
       });
     }
 
     let updatedStory = await story.increment('views', { by: 1 });
-    return res.send(updatedStory);
+    return res.json(updatedStory); // 조회수 증가 X !!!!
 
   } catch (e) {
     console.log(e);
@@ -105,13 +104,13 @@ router.get('/:id/comments', async (req, res, next) => {
     });
 
     if (!comments) {
-      return res.status(404).send({
+      return res.status(404).json({
         errorCode: "Not Found",
         message: "해당 게시물의 댓글이 존재하지 않습니다."
       });
     }
 
-    return res.send(comments);
+    return res.json(comments);
 
   } catch (e) {
     console.log(e);
@@ -154,14 +153,14 @@ router.patch('/:id/comments/:num', async (req, res) => {
   try { 
     let comment = await db.Comment.findByPk(commentId);  
     if (!comment) {
-      return res.status(404).send({
+      return res.status(404).json({
         errorCode: "Not Found",
         message: "해당 댓글이 존재하지 않습니다."
       });
     }
     
     let updatedComment = await comment.update({ content });
-    res.send({
+    res.json({
       id: updatedComment.id,
       message: "해당 id의 댓글 내용이 수정되었습니다."
     });

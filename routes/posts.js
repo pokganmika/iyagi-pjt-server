@@ -36,7 +36,7 @@ router.get('/', async (req, res, next) => {
         message: "연재 중인 게시물이 없습니다."
       });
     }
-    res.send(ongoingStories);
+    res.json(ongoingStories);
 
   } catch (e) {
     console.log(e);
@@ -94,7 +94,7 @@ router.get('/:id', async (req, res, next) => {
     });
 
     if (!story) {
-      return res.status(404).send({
+      return res.status(404).json({
         errorCode: "Not found",
         message: "요청과 일치하는 게시물이 존재하지 않습니다."
       });
@@ -103,7 +103,7 @@ router.get('/:id', async (req, res, next) => {
     let updatedStory = await story.increment('views', { by: 1 });
     console.log('조회수', updatedStory.dataValues.views);
     
-    return res.send(updatedStory); // *** 증가된 조회수 X !!!!!!! ***
+    return res.json(updatedStory); // *** 증가된 조회수 X !!!!!!! ***
 
   } catch (e) {
     console.log(e);
@@ -124,7 +124,7 @@ router.post('/:id', loggedin, async (req, res, next) => {
     let results = await db.Post.findAll({ where: { storyId: storyId } });
     let alreadyWrote = [];
     results.forEach((result) => alreadyWrote.push(result.userId));
-    if (alreadyWrote.includes(userId)) return res.send({
+    if (alreadyWrote.includes(userId)) return res.json({
       errorCode: "Duplicate error",
       message: "이미 작성한 사용자입니다."
     });
@@ -154,7 +154,7 @@ router.patch('/:id/post/:num', async (req, res, next) => {
   try {
     let post = await db.Post.findByPk(postId)  
     if (!post) {
-      return res.status(404).send({
+      return res.status(404).json({
         errorCode: "Not found",
         message: "요청한 게시물이 존재하지 않습니다."
       });
@@ -162,13 +162,13 @@ router.patch('/:id/post/:num', async (req, res, next) => {
 
     if (thumbs === 'up') {
       let updatedPost = await post.increment('thumbsUp', { by: 1 });
-      res.send({
+      res.json({
         id: updatedPost.id,
         message: `해당 id의 게시물 내용이 수정되었습니다. (추천수: ${updatedPost.thumbsUp + 1})`
       });
     } else if (thumbs === 'down') {
       let updatedPost = await post.increment('thumbsDown', { by: 1 });
-      res.send({
+      res.json({
         id: updatedPost.id,
         message: `해당 id의 게시물 내용이 수정되었습니다. (비추천수: ${updatedPost.thumbsDown + 1})`
       });
@@ -190,14 +190,14 @@ router.patch('/:id', async (req, res, next) => {
     if (req.body.isDone === true) {
       let story = await db.Story.findByPk(storyId);
       if (!story) {
-        return res.status(404).send({
+        return res.status(404).json({
           errorCode: "Not found",
           message: "요청한 연재 게시물이 없습니다."
         });
       }
       
       let doneStory = await story.update({ isDone: true });
-      res.send({
+      res.json({
         id: doneStory.id,
         message: "해당 id의 연재 게시물이 완결 처리 되었습니다."
       });
