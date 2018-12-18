@@ -22,14 +22,19 @@ passportConfig(passport);
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
+app.set('port', process.env.PORT || 8001);
 
-app.use(logger('dev'));
+if (process.env.NODE._ENV === 'production') {
+  app.use(logger('combined'));
+} else {
+  app.use(logger('dev'));
+}
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(session({
-  resave: true,
+  resave: false,
   saveUninitialized: false,
   secret: process.env.COOKIE_SECRET,
   cookie: {
@@ -38,6 +43,10 @@ app.use(session({
   },
 }));
 
+if (process.env.NODE_ENV === 'production') {
+  sessionOption.proxy = true;
+  // sessionOption.cookie.secure = true;
+}
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
