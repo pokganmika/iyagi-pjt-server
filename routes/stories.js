@@ -46,7 +46,37 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// 단일 완결물 클릭
+// 단일 완결물 클릭 -> 조회수 증가
+router.patch('/:id', async (req, res, next) => {
+  const clickedStoryId = req.params.id;
+
+  try {
+    const story = await db.Story.findByPk(clickedStoryId);
+
+    if (!story) {
+      return res.status(404).json({
+        errorCode: "Not found",
+        message: "요청과 일치하는 게시물이 존재하지 않습니다."
+      });
+    }
+
+    const updatedStory = await story.increment('views');
+    
+    return res.json({
+      id: updatedStory.id,
+      message: `해당 id의 게시물 조회수가 +1 증가하였습니다. (${updatedStory.views + 1})`
+    });
+
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
+});
+
+// 단일 완결물 출력
 router.get('/:id', async (req, res, next) => {
   const clickedStoryId = req.params.id;
 
@@ -82,10 +112,7 @@ router.get('/:id', async (req, res, next) => {
       });
     }
 
-    const updatedStory = await story.increment('views', { by: 1 });
-    updatedStory.views++;
-
-    return res.json(updatedStory);
+    return res.json(story);
 
   } catch (e) {
     console.log(e);
