@@ -13,5 +13,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: sequelize.literal('now()')
     }
-  }, { timestamps: false });
+  }, { 
+    timestamps: true,
+    paranoid: true,
+    charset: 'utf8',
+    collate: 'utf8_general_ci',
+   });
 };
