@@ -5,7 +5,7 @@ const router = express.Router();
 /* GET home page. */
 router.get('/', async (req, res, next) => {
   try {
-    let doneStories = await db.Story.findAll({
+    const doneStories = await db.Story.findAll({
       where: { isDone: true },
       attributes: { 
         include: [ 'id', 'views' ], 
@@ -63,10 +63,10 @@ router.get('/', async (req, res, next) => {
       sum = 0;
     }
     
-    let maxThumbs = Math.max(...sumArr); // 추천+비추천수
-    let index = sumArr.indexOf(maxThumbs); // doneStories[index] // 이슈
+    const maxThumbs = Math.max(...sumArr); // 추천+비추천수
+    const index = sumArr.indexOf(maxThumbs); // doneStories[index] // 이슈
     
-    let result = {
+    const result = {
       "bestStory": {
         "maxViews": maxViews,
         "posts": maxViewsObj.posts

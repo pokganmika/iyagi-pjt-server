@@ -5,7 +5,7 @@ const router = express.Router();
 // 완결 게시물 리스트
 router.get('/', async (req, res, next) => {
   try {
-    let doneStories = await db.Story.findAll({
+    const doneStories = await db.Story.findAll({
       where: { isDone: true },
       attributes: { 
         include: [ 'id', 'views' ], 
@@ -46,12 +46,42 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// 단일 완결물 클릭
-router.get('/:id', async (req, res, next) => {
-  let clickedStoryId = req.params.id;
+// 단일 완결물 클릭 -> 조회수 증가
+router.patch('/:id', async (req, res, next) => {
+  const clickedStoryId = req.params.id;
 
   try {
-    let story = await db.Story.findOne({
+    const story = await db.Story.findByPk(clickedStoryId);
+
+    if (!story) {
+      return res.status(404).json({
+        errorCode: "Not found",
+        message: "요청과 일치하는 게시물이 존재하지 않습니다."
+      });
+    }
+
+    const updatedStory = await story.increment('views');
+    
+    return res.json({
+      id: updatedStory.id,
+      message: `해당 id의 게시물 조회수가 +1 증가하였습니다. (${updatedStory.views + 1})`
+    });
+
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({
+      errorCode: e.errors[0].type,
+      message: e.errors[0].message
+    });
+  }
+});
+
+// 단일 완결물 출력
+router.get('/:id', async (req, res, next) => {
+  const clickedStoryId = req.params.id;
+
+  try {
+    const story = await db.Story.findOne({
       where: { id: clickedStoryId, isDone: true },
       attributes: { 
         include: [ 'id', 'views' ], 
@@ -82,8 +112,7 @@ router.get('/:id', async (req, res, next) => {
       });
     }
 
-    let updatedStory = await story.increment('views', { by: 1 });
-    return res.json(updatedStory); // 조회수 증가 X !!!!
+    return res.json(story);
 
   } catch (e) {
     console.log(e);
@@ -96,10 +125,10 @@ router.get('/:id', async (req, res, next) => {
 
 // 댓글 리스트
 router.get('/:id/comments', async (req, res, next) => {
-  let clickedStoryId = req.params.id;
+  const clickedStoryId = req.params.id;
 
   try {
-    let comments = await db.Comment.findAll({
+    const comments = await db.Comment.findAll({
       where: { storyId: clickedStoryId }
     });
 
@@ -123,12 +152,12 @@ router.get('/:id/comments', async (req, res, next) => {
 
 // 댓글 작성
 router.post('/:id/comments', async (req, res, next) => {
-  let storyId = req.params.id;
-  let username = req.body.username;
-  let content = req.body.content;
+  const storyId = req.params.id;
+  const username = req.body.username;
+  const content = req.body.content;
 
   try {
-    let newComment = await db.Comment.create({
+    const newComment = await db.Comment.create({
       username, content, storyId
     });
     return res.status(201).json({
@@ -147,11 +176,11 @@ router.post('/:id/comments', async (req, res, next) => {
 
 // 댓글 수정
 router.patch('/:id/comments/:num', async (req, res) => {
-  let commentId = req.params.num;
-  let content = req.body.content;
+  const commentId = req.params.num;
+  const content = req.body.content;
 
   try { 
-    let comment = await db.Comment.findByPk(commentId);  
+    const comment = await db.Comment.findByPk(commentId);  
     if (!comment) {
       return res.status(404).json({
         errorCode: "Not Found",
@@ -159,7 +188,7 @@ router.patch('/:id/comments/:num', async (req, res) => {
       });
     }
     
-    let updatedComment = await comment.update({ content });
+    const updatedComment = await comment.update({ content });
     res.json({
       id: updatedComment.id,
       message: "해당 id의 댓글 내용이 수정되었습니다."
