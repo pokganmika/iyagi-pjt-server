@@ -6,9 +6,6 @@ const logger = require('morgan');
 const session = require('express-session');
 const flash = require('connect-flash');
 const passport = require('passport');
-const helmet = require('helmet');
-const hpp = require('hpp');
-const RedisStore = require('connect-redis')(session);
 require('dotenv').config();
 
 const indexRouter = require('./routes/index');
@@ -17,7 +14,6 @@ const storiesRouter = require('./routes/stories');
 const usersRouter = require('./routes/users');
 const sequelize = require('./models').sequelize;
 const passportConfig = require('./passport');
-const winston = require('./winston'); //
 
 const app = express();
 sequelize.sync({ logging: console.log }) // { force: true }
@@ -47,12 +43,6 @@ const sessionOption = {
     httpOnly: true,
     secure: false,
   },
-  store: new RedisStore({
-    host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
-    pass: process.env.REDIS_PASSWORD,
-    logErrors: true,
-  }),
 }
 
 if (process.env.NODE_ENV === 'production') {
@@ -69,13 +59,6 @@ app.use('/posts', postsRouter);
 app.use('/stories', storiesRouter);
 app.use('/users', usersRouter);
 
-app.use((req, res, next) => { // winston 추가
-  const err = new Error('Not Found');
-  err.status = 404;
-  winston.info('hello');
-  winston.error(err.message);
-  next(err);
-});
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname + '/client/build/index.html'))
